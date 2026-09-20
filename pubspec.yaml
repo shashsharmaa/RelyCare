@@ -38,6 +38,7 @@ dependencies:
   go_router: ^18.0.1
   google_fonts: ^8.2.1
   url_launcher: ^6.3.0
+  uuid: ^4.6.0
 
 dev_dependencies:
   flutter_test:

@@ -41,6 +41,10 @@ class _CreateReferralScreenState extends State<CreateReferralScreen> {
       return;
     }
 
+    String phoneInput = _phoneController.text.trim();
+    String digitsOnly = phoneInput.replaceAll(RegExp(r'\D'), '');
+    String? normalizedPhone = digitsOnly.isEmpty ? null : digitsOnly;
+
     // Pass the collected patient data as extra to step 2
     context.push(
       '/create-referral-step2',
@@ -48,7 +52,7 @@ class _CreateReferralScreenState extends State<CreateReferralScreen> {
         'name': _nameController.text.trim(),
         'age': _ageController.text.trim(),
         'gender': _selectedGender,
-        'phone': _phoneController.text.trim(),
+        'phone': normalizedPhone,
         'location': _locationController.text.trim(),
       },
     );

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/referral_provider.dart';
 import '../../models/referral.dart';
 import '../../models/patient.dart';
@@ -29,11 +31,44 @@ class _CreateReferralStep2ScreenState extends State<CreateReferralStep2Screen> {
 
   String? _selectedDestination;
   final List<String> _destinationOptions = ['District Hospital', 'City General', 'Specialty Clinic'];
+  final Map<String, String> _destinationIds = {
+    'District Hospital': 'DIST-HOSP-01',
+    'City General': 'CITY-GEN-01',
+    'Specialty Clinic': 'SPEC-CLINIC-01',
+  };
 
   String? _selectedUrgency;
   final List<String> _urgencyOptions = ['Normal', 'Urgent', 'Emergency'];
 
   int _currentNavIndex = 0;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Fix 4: Reject missing patient data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final name = widget.patientData['name'];
+      final age = widget.patientData['age'];
+      final gender = widget.patientData['gender'];
+      final location = widget.patientData['location'];
+
+      if (name == null || name.toString().trim().isEmpty ||
+          age == null || age.toString().trim().isEmpty ||
+          gender == null || gender.toString().trim().isEmpty ||
+          location == null || location.toString().trim().isEmpty) {
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Patient details missing. Please start over.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        context.go('/create-referral');
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -43,54 +78,80 @@ class _CreateReferralStep2ScreenState extends State<CreateReferralStep2Screen> {
   }
 
   void _handleNext() async {
+    if (_isSubmitting) return;
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    final referralProvider = Provider.of<ReferralProvider>(context, listen: false);
+    setState(() {
+      _isSubmitting = true;
+    });
 
-    // Create Patient and Referral model instances
-    final patient = Patient(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      fullName: widget.patientData['name'],
-      age: int.tryParse(widget.patientData['age'].toString()) ?? 0,
-      gender: widget.patientData['gender'],
-      contactNumber: widget.patientData['phone'],
-      villageOrLocation: widget.patientData['location'],
-      createdAt: DateTime.now(),
-    );
+    try {
+      final referralProvider = Provider.of<ReferralProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    final urgency = _selectedUrgency == 'Emergency' 
-        ? ReferralUrgency.emergency 
-        : (_selectedUrgency == 'Urgent' ? ReferralUrgency.urgent : ReferralUrgency.routine);
-
-    final referral = Referral(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      referralToken: 'RC-${DateTime.now().year}-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-      patientId: patient.id,
-      patient: patient,
-      sourceFacilityId: 'PHC-001', // Mock source
-      destinationFacilityId: _selectedDestination ?? 'UNKNOWN',
-      referralReason: _reasonController.text.trim(),
-      clinicalNotesSummary: _clinicalNotesController.text.trim(),
-      urgency: urgency,
-      status: ReferralStatus.created,
-      syncState: SyncState.pendingSync,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-
-    // Save referral locally
-    final success = await referralProvider.createReferral(referral);
-
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Referral saved locally. It will sync when online.'),
-          duration: Duration(seconds: 3),
-        ),
+      // Create Patient and Referral model instances
+      final patient = Patient(
+        id: const Uuid().v4(),
+        fullName: widget.patientData['name'],
+        age: int.tryParse(widget.patientData['age'].toString()) ?? 0,
+        gender: widget.patientData['gender'],
+        contactNumber: widget.patientData['phone'],
+        villageOrLocation: widget.patientData['location'],
+        createdAt: DateTime.now(),
       );
-      context.go('/phc-dashboard');
+
+      final urgency = _selectedUrgency == 'Emergency' 
+          ? ReferralUrgency.emergency 
+          : (_selectedUrgency == 'Urgent' ? ReferralUrgency.urgent : ReferralUrgency.routine);
+
+      final referralId = const Uuid().v4();
+      final referral = Referral(
+        id: referralId,
+        referralToken: 'RC-${DateTime.now().year}-${referralId.substring(0, 5).toUpperCase()}',
+        patientId: patient.id,
+        patient: patient,
+        sourceFacilityId: authProvider.facilityId,
+        destinationFacilityId: _destinationIds[_selectedDestination] ?? 'UNKNOWN',
+        referralReason: _reasonController.text.trim(),
+        clinicalNotesSummary: _clinicalNotesController.text.trim(),
+        urgency: urgency,
+        status: ReferralStatus.created,
+        syncState: SyncState.pendingSync,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      // Save referral locally
+      final success = await referralProvider.createReferral(referral);
+
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Referral saved locally. It will sync when online.'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          context.go('/phc-dashboard');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(referralProvider.errorMessage ?? 'Failed to save referral. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
@@ -235,7 +296,7 @@ class _CreateReferralStep2ScreenState extends State<CreateReferralStep2Screen> {
                         width: double.infinity,
                         height: 52,
                         child: ElevatedButton(
-                          onPressed: _handleNext,
+                          onPressed: _isSubmitting ? null : _handleNext,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
@@ -247,16 +308,23 @@ class _CreateReferralStep2ScreenState extends State<CreateReferralStep2Screen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                'Next',
-                                style: GoogleFonts.inter(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.2,
+                              if (_isSubmitting)
+                                const SizedBox(
+                                  width: 20, 
+                                  height: 20, 
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
+                                )
+                              else
+                                Text(
+                                  'Next',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.2,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Icon(
+                              if (!_isSubmitting) const SizedBox(width: 8),
+                              if (!_isSubmitting) const Icon(
                                 Icons.check_circle_outline_rounded,
                                 size: 20,
                                 color: Colors.white,

@@ -45,6 +45,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => _isAuthenticated;
   String? get errorMessage => _errorMessage;
   List<String> get availableRoles => List.unmodifiable(_availableRoles);
+  String get facilityId => 'PHC-001'; // Mock default facility ID for now
 
   /// Sets the selected role
   void setSelectedRole(String role) {
