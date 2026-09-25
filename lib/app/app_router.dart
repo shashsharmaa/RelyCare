@@ -12,6 +12,7 @@ import '../screens/referrals/referrals_screen.dart';
 import '../screens/sync/sync_status_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/user_tracking/user_tracking_screen.dart';
+import '../screens/user_profile/user_profile_screen.dart';
 import '../providers/auth_provider.dart';
 
 /// Centralized GoRouter navigation configuration for RelyCare.
@@ -28,9 +29,10 @@ class AppRouter {
   static const String syncStatus = '/sync-status';
   static const String profile = '/profile';
   static const String userTracking = '/user-tracking';
+  static const String userProfile = '/user-profile';
 
   /// Routes that do NOT require authentication.
-  static const _publicRoutes = {login, userTracking};
+  static const _publicRoutes = {login, userTracking, userProfile};
 
   /// Creates a [GoRouter] that re-evaluates the redirect whenever
   /// [authProvider] calls [notifyListeners].
@@ -186,6 +188,13 @@ class AppRouter {
           name: 'userTracking',
           builder: (BuildContext context, GoRouterState state) {
             return const UserTrackingScreen();
+          },
+        ),
+        GoRoute(
+          path: userProfile,
+          name: 'userProfile',
+          builder: (BuildContext context, GoRouterState state) {
+            return const UserProfileScreen();
           },
         ),
       ],

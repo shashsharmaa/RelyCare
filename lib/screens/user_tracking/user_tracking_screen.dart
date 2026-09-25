@@ -226,8 +226,9 @@ class _UserTrackingScreenState extends State<UserTrackingScreen>
           children: [
             const SizedBox(height: 8),
 
-            // Top row: back arrow (left), spacer (right side empty — no bell)
+            // Top row: back arrow (left), view profile (right)
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Back Button
                 GestureDetector(
@@ -250,6 +251,41 @@ class _UserTrackingScreenState extends State<UserTrackingScreen>
                       Icons.arrow_back_rounded,
                       color: Colors.white,
                       size: 22,
+                    ),
+                  ),
+                ),
+
+                // View Profile Button
+                GestureDetector(
+                  onTap: () => context.push('/user-profile'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.person_outline_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'View Profile',
+                          style: GoogleFonts.inter(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
