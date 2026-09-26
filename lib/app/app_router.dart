@@ -13,6 +13,8 @@ import '../screens/sync/sync_status_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/user_tracking/user_tracking_screen.dart';
 import '../screens/user_profile/user_profile_screen.dart';
+import '../screens/referral_status/referral_status_screen.dart';
+import '../screens/emergency/emergency_screen.dart';
 import '../providers/auth_provider.dart';
 
 /// Centralized GoRouter navigation configuration for RelyCare.
@@ -30,9 +32,17 @@ class AppRouter {
   static const String profile = '/profile';
   static const String userTracking = '/user-tracking';
   static const String userProfile = '/user-profile';
+  static const String referralStatus = '/referral-status';
+  static const String emergency = '/emergency';
 
   /// Routes that do NOT require authentication.
-  static const _publicRoutes = {login, userTracking, userProfile};
+  static const _publicRoutes = {
+    login,
+    userTracking,
+    userProfile,
+    referralStatus,
+    emergency,
+  };
 
   /// Creates a [GoRouter] that re-evaluates the redirect whenever
   /// [authProvider] calls [notifyListeners].
@@ -195,6 +205,20 @@ class AppRouter {
           name: 'userProfile',
           builder: (BuildContext context, GoRouterState state) {
             return const UserProfileScreen();
+          },
+        ),
+        GoRoute(
+          path: referralStatus,
+          name: 'referralStatus',
+          builder: (BuildContext context, GoRouterState state) {
+            return const ReferralStatusScreen();
+          },
+        ),
+        GoRoute(
+          path: emergency,
+          name: 'emergency',
+          builder: (BuildContext context, GoRouterState state) {
+            return const EmergencyScreen();
           },
         ),
       ],

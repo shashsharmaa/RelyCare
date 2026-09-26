@@ -88,10 +88,11 @@ class UserProfileScreen extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: () {
+                    // Pops back to Referral Status, which pushed this screen.
                     if (context.canPop()) {
                       context.pop();
                     } else {
-                      context.go('/user-tracking');
+                      context.go('/referral-status');
                     }
                   },
                   child: Container(
